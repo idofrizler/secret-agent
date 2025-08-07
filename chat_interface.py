@@ -6,6 +6,13 @@ import threading
 from datetime import datetime
 from typing import Dict, Any, List
 import asyncio
+import sys
+import io
+import contextlib
+import traceback
+import subprocess
+import tempfile
+import os
 
 # Set page config for ChatGPT-like appearance
 st.set_page_config(
@@ -84,9 +91,57 @@ def search_web(query: str) -> str:
     return f"Found information about '{query}': This is a simulated search result. 🔍"
 
 def run_code(code: str) -> str:
-    time.sleep(1)
-    # Simple safe code execution (just return the code for now)
-    return f"Code executed:\n```python\n{code}\n```\nOutput: Simulated execution result"
+    """Execute Python code safely with timeout and output capture"""
+    try:
+        # Create a temporary file for the code
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(code)
+            temp_file = f.name
+        
+        try:
+            # Execute the code with a timeout
+            result = subprocess.run(
+                [sys.executable, temp_file],
+                capture_output=True,
+                text=True,
+                timeout=10,  # 10 second timeout
+                cwd=os.path.dirname(temp_file)
+            )
+            
+            # Clean up the temporary file
+            os.unlink(temp_file)
+            
+            # Format the output
+            output_lines = []
+            
+            if result.stdout:
+                output_lines.append("**Output:**")
+                output_lines.append(f"```\n{result.stdout.strip()}\n```")
+            
+            if result.stderr:
+                output_lines.append("**Errors:**")
+                output_lines.append(f"```\n{result.stderr.strip()}\n```")
+            
+            if result.returncode != 0:
+                output_lines.append(f"**Exit Code:** {result.returncode}")
+            
+            if not output_lines:
+                output_lines.append("*Code executed successfully with no output*")
+            
+            # Show the executed code and results
+            return f"**Code executed:**\n```python\n{code}\n```\n\n" + "\n\n".join(output_lines)
+            
+        except subprocess.TimeoutExpired:
+            os.unlink(temp_file)
+            return f"**Code executed:**\n```python\n{code}\n```\n\n**Error:** Code execution timed out (10 seconds limit)"
+        
+        except Exception as e:
+            if os.path.exists(temp_file):
+                os.unlink(temp_file)
+            return f"**Code executed:**\n```python\n{code}\n```\n\n**Error:** {str(e)}"
+            
+    except Exception as e:
+        return f"**Error preparing code execution:** {str(e)}"
 
 # Tool registry
 TOOLS = {

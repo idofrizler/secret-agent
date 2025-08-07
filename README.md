@@ -15,7 +15,7 @@ A ChatGPT-style web interface for your local agent that runs on Ollama with gpt-
 - 👋 **say_hello**: Greets someone by name
 - 🌤️ **get_weather**: Gets weather information for a location  
 - 🔍 **search_web**: Searches the web for information
-- 💻 **run_code**: Executes Python code
+- 💻 **run_code**: Executes Python code safely with 10-second timeout
 
 ## Quick Start
 
@@ -103,5 +103,10 @@ Add new tools by:
 **Performance issues?**
 - The gpt-oss:20b model requires significant RAM (16GB+)
 - Consider using a smaller model for testing
+
+**Code execution security?**
+- Code runs in temporary files with 10-second timeout
+- Only standard Python libraries are available
+- Be cautious with user-provided code in production
 
 Enjoy your local agent with a professional ChatGPT-style interface! 🚀
